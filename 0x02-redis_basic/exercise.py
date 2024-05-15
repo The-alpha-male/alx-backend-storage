@@ -7,6 +7,65 @@ from functools import wraps
 from typing import Union, Callable, Optional
 
 
+def replay(method: Callable) -> None:
+    """Display the history of calls of a particular function.
+
+    Args:
+        method (Callable): The function to display the history for.
+    """
+    r = method.__self__._redis
+    qualname = method.__qualname__
+    inputs_key = f"{qualname}:inputs"
+    outputs_key = f"{qualname}:outputs"
+
+    num_calls = r.get(qualname)
+    if num_calls:
+        num_calls = num_calls.decode('utf-8')
+    else:
+        num_calls = '0'
+
+    inputs = r.lrange(inputs_key, 0, -1)
+    outputs = r.lrange(outputs_key, 0, -1)
+
+    print(f"{qualname} was called {num_calls} times:")
+
+    for input_, output in zip(inputs, outputs):
+        input_ = input_.decode('utf-8')
+        output = output.decode('utf-8')
+        print(f"{qualname}(*{input_}) -> {output}")
+
+
+def count_calls(method: Callable) -> Callable:
+    """Count calls
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """Wrapper
+        """
+        key = method.__qualname__
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
+def call_history(method: Callable) -> Callable:
+    """Call history
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """Wrapper
+        """
+        input_key = method.__qualname__ + ":inputs"
+        output_key = method.__qualname__ + ":outputs"
+
+        self._redis.rpush(input_key, str(args))
+        result = method(self, *args, **kwargs)
+        self._redis.rpush(output_key, str(result))
+
+        return result
+    return wrapper
+
+
 class Cache:
     """Cache implementation"""
     def __init__(self) -> None:
