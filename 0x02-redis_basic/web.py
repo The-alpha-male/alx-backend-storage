@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Web Cache and tracker"""
+"""
+create a web cach
+"""
 import redis
 import requests
 rc = redis.Redis()
@@ -7,7 +9,7 @@ count = 0
 
 
 def get_page(url: str) -> str:
-    """Get a page and cache value"""
+    """ get a page and cach value"""
     rc.set(f"cached:{url}", count)
     resp = requests.get(url)
     rc.incr(f"count:{url}")
