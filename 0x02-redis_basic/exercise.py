@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-""" Redis Basics"""
-
+"""0. Writing strings to Redis
+1. Reading from Redis and recovering
+original type
+"""
 import redis
 import uuid
-from functools import wraps
+import functools
 from typing import Union, Callable, Optional
 
 
@@ -67,17 +69,24 @@ def call_history(method: Callable) -> Callable:
 
 
 class Cache:
-    """Cache implementation"""
+    """Cache class
+    __init__ method to initialize redis
+    store method to generate random key
+    """
     def __init__(self) -> None:
-        """Initialize redis"""
+        """Initialize redis
+        """
         self._redis = redis.Redis()
         self._redis.flushdb()
 
     @count_calls
     @call_history
     def store(self, data: Union[str, bytes, int, float]) -> str:
-        """Generate random key"""
+        """Generate random key
+        """
         key = str(uuid.uuid4())
+        if isinstance(data, (int, float)):
+            data = str(data)
         self._redis.set(name=key, value=data)
         return key
 
